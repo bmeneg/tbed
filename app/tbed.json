@@ -1,0 +1,7 @@
+{
+  "name": "tbed",
+  "description": "Make use of an external editor of your choice to compose emails.",
+  "path": "D:\\Documents\\git\\tbed\\app\\tbed.exe",
+  "type": "stdio",
+  "allowed_extensions": ["tbed@bmeneg.com"]
+}
