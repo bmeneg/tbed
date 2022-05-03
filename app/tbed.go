@@ -70,7 +70,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	msg.setPayload(text)
+	if err = msg.setPayload(text); err != nil {
+		log.Fatal(err)
+	}
 	if err = extConn.sendMessage(*msg); err != nil {
 		log.Fatal(err)
 	}
