@@ -58,31 +58,31 @@ function hndlResponse(resp)
 	dbg(`resp: message: ${resp}`);
 	
 	// Handle possible paged/continued responses.
-	customHeader = "--tbed-hdr\n"
+	customHeader = "--tbed-hdr\n";
 	if (resp.startsWith(customHeader)) {
 		if (resp.substring(customHeader.length).startsWith("Pages:")) {
-			g_pages = resp.substring(4 + "Pages: ".length)
-			dbg(`resp: message with ${pages} pages`)
-			return
+			g_pages = resp.substring(4 + "Pages: ".length);
+			dbg(`resp: message with ${pages} pages`);
+			return;
 		}
 	}
 
 	if (g_pages > 0) {
 		dbg(`resp: continued response: ${resp}`);
 		g_paged_responses.push(resp);
-		g_pages--
+		g_pages--;
 		return;
 	}
 
 	// Return the resp as-is if there were not CONT messages.
-	let finalResp = resp
+	let finalResp = resp;
 	if (g_paged_responses.length > 0) {
 		finalResp = g_paged_responses.join('').concat(resp);
 		g_paged_responses = [];
 		return resp;
 	}
 
-	browser.compose.setComposeDetails(g_tabID, {plainTextBody: finalResp})
+	browser.compose.setComposeDetails(g_tabID, {plainTextBody: finalResp});
 }
 
 /* sendMessage is a simple wrapper around WebExtension's API postMessage()
@@ -112,7 +112,6 @@ function initNativeConnection()
 	dbg("connected with success");
 
 	appPort.onMessage.addListener(hndlResponse);
-
 	return appPort;
 }
 
@@ -121,12 +120,11 @@ function initNativeConnection()
 async function hndlEvent(tabObj) {
 	dbg(`tab id: ${tabObj.id} tab title: ${tabObj.title}`);
 	g_tabID = tabObj.id
-
 	let appPort = initNativeConnection();
 	
 	let cDetails = await browser.compose.getComposeDetails(g_tabID);
 	if (cDetails.isPlainText == false) {
-		console.error("unfortunately non-plaintext isn't supported yet");
+		console.error("non-plaintext isn't supported yet");
 		return;
 	}
 
