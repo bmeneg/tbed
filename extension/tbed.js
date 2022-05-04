@@ -45,17 +45,7 @@ var g_tabID = 0;
 var g_paged_responses = [];
 var g_pages = 0;
 
-/* Logging helpers. */
-function err(text)
-{
-	console.log(`tbed: err: ${text}`);
-}
-
-function info(text)
-{
-	console.log(`tbed: info: ${text}`);
-}
-
+/* Logging helper. */
 function dbg(text)
 {
 	if (g_debug) console.log(`tbed: dbg: ${text}`);
@@ -101,7 +91,7 @@ function sendMessage(appPort, msg)
 {
 	// It should _never_ happen. 4GB _should_ not be a real message
 	if (msg.length > EXT_MAX_MSGLEN) {
-		err("no, you won't send a freaking payload with more than 4GB");
+		console.error("no, you won't send a freaking 4G+ payload");
 		return;
 	}
 
@@ -116,10 +106,10 @@ function initNativeConnection()
 {
 	appPort = browser.runtime.connectNative("tbed");
 	if (appPort.error) {
-		err(`failed to connect to application: ${appPort.error.message}`);
+		console.error(`connection failed: ${appPort.error.message}`);
 		return;
 	}
-	dbg("connection: success");
+	dbg("connected with success");
 
 	appPort.onMessage.addListener(hndlResponse);
 
@@ -136,7 +126,7 @@ async function hndlEvent(tabObj) {
 	
 	let cDetails = await browser.compose.getComposeDetails(g_tabID);
 	if (cDetails.isPlainText == false) {
-		err("unfortunately non-plaintext isn't supported yet");
+		console.error("unfortunately non-plaintext isn't supported yet");
 		return;
 	}
 
@@ -178,7 +168,7 @@ async function cmdCalled(event)
 
 	// Make sure our messageCompose has a single tab.
 	if (fWindow.tabs.length != 1) {
-		err("impossible to know what tab is the correct");
+		console.error("impossible to know which tab is the correct");
 		return;
 	}
 	hndlEvent(fWindow.tabs[0]);
