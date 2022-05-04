@@ -117,7 +117,7 @@ function initNativeConnection()
 
 /* hndlEvent is the common code for extracting the compose text to be sent
  * to the native application. */
-async function hndlEvent(tabObj) {
+async function hndlUIEvent(tabObj) {
 	dbg(`tab id: ${tabObj.id} tab title: ${tabObj.title}`);
 	g_tabID = tabObj.id
 	let appPort = initNativeConnection();
@@ -137,7 +137,7 @@ async function hndlEvent(tabObj) {
 function btnClicked(tabObj)
 {
 	dbg("event: button clicked");
-	hndlEvent(tabObj);
+	hndlUIEvent(tabObj);
 }
 
 /* cmdCalled handle hotkey command events. */
@@ -169,7 +169,7 @@ async function cmdCalled(event)
 		console.error("impossible to know which tab is the correct");
 		return;
 	}
-	hndlEvent(fWindow.tabs[0]);
+	hndlUIEvent(fWindow.tabs[0]);
 }
 
 /* setupListeners set the event handlers for the extension. */
