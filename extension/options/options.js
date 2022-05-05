@@ -34,12 +34,14 @@ function onError(e) {
 async function updateSavedUI() {
 	const storage = await browser.storage.local.get();
 
-	ui.savedEditor.innerText = storage.tbed_editor_cmd || "not selected";
+	ui.savedEditor.innerText = storage.tbedEditor || "not selected";
 
-	if (ui.args.enabled) {
-		ui.args.value = storage.tbed_editor_cmd.split(" ", 1)[1] || "";
+	if (storage.fromPath) {
+		ui.args.value = storage.tbedEditor.split(" ", 1)[1] || "";
+		ui.selectByPath.checked = true;
 	} else {
-		ui.shell.value = storage.tbed_editor_cmd || "";
+		ui.shell.value = storage.tbedEditor || "";
+		ui.selectByShell.checked = true;
 	}
 }
 
@@ -48,15 +50,20 @@ async function updateSavedUI() {
 function optsSave(event) {
 	event.preventDefault();
 
-	let cmd;
+	let cmd, fromPath;
 	if (ui.path.enabled) {
 		path = extractFilename(ui.path.value);
 		cmd = path.concat(" ", ui.args.value);
+		fromPath = true;
 	} else {
 		cmd = ui.shell.value;
+		fromPath = false;
 	}
 
-	browser.storage.local.set({tbed_editor_cmd: cmd});
+	browser.storage.local.set({
+		tbedEditor: cmd,
+		tbedFromPath: fromPath
+	});
 	updateSavedUI();
 }
 
