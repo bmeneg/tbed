@@ -60,20 +60,34 @@ func main() {
 	}
 
 	extConn := initConnection()
-	msg, err := extConn.readMessage()
+
+	// First, read the message with the editor cmd to be executed.
+	editorMsg, err := extConn.readMessage()
+	if err != nil {
+		log.Fatal(err)
+	}
+	editor, err := initEditor(*editorMsg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Update message payload with the edited version.
-	text, err := externalEdit(msg.payload)
+	// Second, read the message to be edited.
+	textMsg, err := extConn.readMessage()
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err = msg.setPayload(text); err != nil {
+
+	// Third, update message payload with the edited version.
+	text, err := editor.edit(textMsg.payload)
+	if err != nil {
 		log.Fatal(err)
 	}
-	if err = extConn.sendMessage(*msg); err != nil {
+	if err = textMsg.setPayload(text); err != nil {
+		log.Fatal(err)
+	}
+
+	// Finally, send the updated message back to the extension.
+	if err = extConn.sendMessage(*textMsg); err != nil {
 		log.Fatal(err)
 	}
 }

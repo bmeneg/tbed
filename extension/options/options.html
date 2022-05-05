@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>TBEd Options</title>
+</head>
+<body>
+	<p>Current external editor set: <b id="savedEditor">no value found</b></p>
+	<form id="editorOpts">
+		<hr>
+		<p>
+			<input type="radio" id="selectByPath" name="editorSelector">
+			Select editor by its local path.
+		</p>
+		<p>
+			<label for="path">Path:</label>
+			<input type="file" id="path">
+		</p>
+		<p>
+			<label for="args">Arguments:</label>
+			<input type="text" id="args">
+		</p>
+		<hr>
+		<p>
+			<input type="radio" id="selectByShell" name="editorSelector">
+			Select editor by its shell command.
+		</p>
+		<p>
+			<label for="shell">Shell command:</label>
+			<input type="text" id="shell">
+		</p>
+		<button type="submit">Save</button>
+	</form>
+	<script src="options.js"></script>
+</body>
+</html>

@@ -10,18 +10,18 @@
       "strict_min_version": "78.0"
     }
   },
+  "icons": {
+    "48": "icons/tbed-48.png",
+    "96": "icons/tbed-96.png"
+  },
   "background": {
     "scripts": [
       "tbed.js"
     ]
   },
   "compose_action": {
-    "default_title": "External Editor"
-  },
-  "options_ui": {
-    "page": "options/options.html",
-    "open_in_tab": false,
-    "browser_style": true
+    "default_title": "External Editor",
+    "default_icon": "icons/tbed-48.png"
   },
   "commands": {
     "tbed": {
@@ -31,11 +31,22 @@
       "description": "Edit compose message in the external editor"
     }
   },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": false,
+    "browser_style": true
+  },
+  "browser_specific_settings": {
+    "gecko": {
+        "id": "tbed@bmeneg.com"
+    }
+  },
   "permissions": [
     "nativeMessaging",
     "compose",
     "tabs",
     "tabHide",
-    "activeTab"
+    "activeTab",
+    "storage"
   ]
 }

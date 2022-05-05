@@ -16,6 +16,9 @@ import (
 // extension.
 const payloadMaxLen = 1048576
 
+// tbedHeader is a custom header we use to send and receive control messages.
+const tbedHeader = "--tbed-hdr\n"
+
 var nativeEndian binary.ByteOrder
 
 func init() {
@@ -154,13 +157,12 @@ func (c Connection) send(msg Message) error {
 func (c Connection) sendMessage(msg Message) error {
 	if msg.length > payloadMaxLen {
 		// Create new message to indicate the number of pages:
-		// """
+		// """"
 		// --tbed-hdr
 		// Pages: %d
-		// """
+		// """"
 		// we might make more use of that in the future.
-		header := "--tbed-hdr\n"
-		hdrPages := fmt.Sprintf("%sPages: %d", header, msg.pages)
+		hdrPages := fmt.Sprintf("%sPages: %d", tbedHeader, msg.pages)
 		encPages, err := json.Marshal(hdrPages)
 		if err != nil {
 			return err

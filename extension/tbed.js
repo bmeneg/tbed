@@ -33,12 +33,18 @@
  *   format.
  *   - payload: must be json streamed.
  */
- 
+
+// Development debug flag.
+const DEBUG = true;
+
 // Message length limits.
 const EXT_MAX_MSGLEN = 4294967296;
 const APP_MAX_MSGLEN = 1048576;
 
-var g_debug = true;
+// Custom header delimiter.
+const TBED_HEADER = "--tbed-hdr\n";
+
+// Tab ID from where the message was first picked up.
 var g_tabID = 0;
 
 // Handle paged responses.
@@ -48,7 +54,14 @@ var g_pages = 0;
 /* Logging helper. */
 function dbg(text)
 {
-	if (g_debug) console.log(`tbed: dbg: ${text}`);
+	if (DEBUG) console.log(`tbed: dbg: ${text}`);
+}
+
+/* editor gets the external editor command set by the user in the options
+ * page. */
+async function editor() {
+	const storage = await browser.storage.local.get();
+	return storage.tbed_editor_cmd;
 }
 
 /* hndlResponse is the event handler for responses coming from the native
@@ -58,9 +71,8 @@ function hndlResponse(resp)
 	dbg(`resp: message: ${resp}`);
 	
 	// Handle possible paged/continued responses.
-	customHeader = "--tbed-hdr\n";
-	if (resp.startsWith(customHeader)) {
-		if (resp.substring(customHeader.length).startsWith("Pages:")) {
+	if (resp.startsWith(TBED_HEADER)) {
+		if (resp.substring(TBED_HEADER.length).startsWith("Pages:")) {
 			g_pages = resp.substring(4 + "Pages: ".length);
 			dbg(`resp: message with ${pages} pages`);
 			return;
@@ -86,14 +98,23 @@ function hndlResponse(resp)
 }
 
 /* sendMessage is a simple wrapper around WebExtension's API postMessage()
- * to ease debugging and preventing weird user behavior. */
-function sendMessage(appPort, msg)
+ * to ease debugging and preventing weird user behavior.
+ * Note: we need to make it async because accessing the storage on editor()
+ * is an async operation and we can't move forward without the result. */
+async function sendMessage(appPort, msg)
 {
 	// It should _never_ happen. 4GB _should_ not be a real message
 	if (msg.length > EXT_MAX_MSGLEN) {
 		console.error("no, you won't send a freaking 4G+ payload");
 		return;
 	}
+
+	// First send the editor command to be ran by the native app.
+	const cmd = await editor();
+	cmdMsg = `${TBED_HEADER}Command: ${cmd}`;
+	dbg(`send: message len: ${cmdMsg.length}`);
+	dbg(`send: command message: ${cmdMsg}`);
+	appPort.postMessage(cmdMsg);
 
 	dbg(`send: message len: ${msg.length}`);
 	dbg(`send: message: ${msg}`);
@@ -129,7 +150,8 @@ async function hndlUIEvent(tabObj) {
 	}
 
 	let body = cDetails.plainTextBody;
-	sendMessage(appPort, body);
+	await sendMessage(appPort, body);
+	return;
 }
 
 /* btnClicked is just a wrapper around hndlEvent for easing debug when
