@@ -33,16 +33,15 @@ function onError(e) {
 /* updateUI updates the field that shows the previous assigned editor path. */
 async function updateSavedUI() {
 	const storage = await browser.storage.local.get();
-
 	ui.savedEditor.innerText = storage.tbedEditor || "not selected";
-
-	if (storage.fromPath) {
+	if (storage.tbedFromPath) {
 		ui.args.value = storage.tbedEditor.split(" ", 1)[1] || "";
 		ui.selectByPath.checked = true;
 	} else {
 		ui.shell.value = storage.tbedEditor || "";
 		ui.selectByShell.checked = true;
 	}
+	toggleSelection();
 }
 
 /* optsSave concatenates both editor path and arguments field in a single
@@ -51,7 +50,7 @@ function optsSave(event) {
 	event.preventDefault();
 
 	let cmd, fromPath;
-	if (ui.path.enabled) {
+	if (ui.selectByPath.checked) {
 		path = extractFilename(ui.path.value);
 		cmd = path.concat(" ", ui.args.value);
 		fromPath = true;
