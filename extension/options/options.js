@@ -15,7 +15,7 @@ function extractFilename(path) {
 	let idx;
 	// Unix-based path
 	idx = path.lastIndexOf('/');
-  	if (x >= 0)
+	if (idx >= 0)
     	return path.substr(idx+1);
 
 	// Windows-based path
@@ -26,13 +26,16 @@ function extractFilename(path) {
 	return path;
 }
 
-function onError(e) {
-	console.error(e);
-}
-
 /* updateUI updates the field that shows the previous assigned editor path. */
 async function updateSavedUI() {
-	const storage = await browser.storage.local.get();
+	let storage;
+	try {
+		storage = await browser.storage.local.get();
+	} catch(e) {
+		console.error(e);
+		return;
+	}
+
 	ui.savedEditor.innerText = storage.tbedEditor || "not selected";
 	if (storage.tbedFromPath) {
 		ui.args.value = storage.tbedEditor.split(" ", 1)[1] || "";
