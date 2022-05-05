@@ -60,8 +60,14 @@ function dbg(text)
 /* editor gets the external editor command set by the user in the options
  * page. */
 async function editor() {
-	const storage = await browser.storage.local.get();
-	return storage.tbed_editor_cmd;
+	let storage;
+	try {
+		storage = await browser.storage.local.get();
+	} catch(e) {
+		console.error(e)
+	}
+
+	return storage.tbedEditor;
 }
 
 /* hndlResponse is the event handler for responses coming from the native
