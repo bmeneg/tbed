@@ -48,7 +48,7 @@ const TBED_HEADER = "--tbed-hdr\n";
 var g_tabID = 0;
 
 // Handle paged responses.
-var g_paged_responses = [];
+var g_pagedResponses = [];
 var g_pages = 0;
 
 /* Logging helper. */
@@ -87,16 +87,16 @@ function hndlResponse(resp)
 
 	if (g_pages > 0) {
 		dbg(`resp: continued response: ${resp}`);
-		g_paged_responses.push(resp);
+		g_pagedResponses.push(resp);
 		g_pages--;
 		return;
 	}
 
 	// Return the resp as-is if there were not CONT messages.
 	let finalResp = resp;
-	if (g_paged_responses.length > 0) {
-		finalResp = g_paged_responses.join('').concat(resp);
-		g_paged_responses = [];
+	if (g_pagedResponses.length > 0) {
+		finalResp = g_pagedResponses.join('').concat(resp);
+		g_pagedResponses = [];
 		return resp;
 	}
 
