@@ -9,6 +9,15 @@
 	<form id="editorOpts">
 		<hr>
 		<p>
+			<input type="radio" id="selectByShell" name="editorSelector">
+			Select editor by its shell command.
+		</p>
+		<p>
+			<label for="shell">Shell command:</label>
+			<input type="text" id="shell">
+		</p>
+		<hr>
+		<p>
 			<input type="radio" id="selectByPath" name="editorSelector">
 			Select editor by its local path.
 		</p>
@@ -19,15 +28,6 @@
 		<p>
 			<label for="args">Arguments:</label>
 			<input type="text" id="args">
-		</p>
-		<hr>
-		<p>
-			<input type="radio" id="selectByShell" name="editorSelector">
-			Select editor by its shell command.
-		</p>
-		<p>
-			<label for="shell">Shell command:</label>
-			<input type="text" id="shell">
 		</p>
 		<button type="submit">Save</button>
 	</form>
