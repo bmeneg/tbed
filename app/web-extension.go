@@ -12,12 +12,15 @@ import (
 	"unsafe"
 )
 
-// PayloadMaxLen is the maximum payload length the app can send to the
-// extension.
-const payloadMaxLen = 1048576
+// textMaxLen is the maximum plaintext length the app can send to the
+// extension. 1048576 is the specified limit for the payload, which includes
+// 4 bytes of header and 4 bytes for each additional char added in the JSON
+// data. Because of that, we decrease this plaintext limit to, at least,
+// half, avoiding any surprises during serialization.
+const textMaxLen = 524288
 
 // tbedHeader is a custom header we use to send and receive control messages.
-const tbedHeader = "--tbed-hdr\n"
+const tbedHeader = "--tbed-hdr"
 
 var nativeEndian binary.ByteOrder
 
@@ -57,21 +60,55 @@ func initConnection() Connection {
 
 // Message hold attributes for both received and to-be-sent messages.
 type Message struct {
-	payload string // JSON encoded message
-	length  uint32 // encoded message length
-	pages   uint32 // pages needed to send the msg considering payloadMaxLen
+	payload []string // JSON encoded message
+	pages   uint32   // number of payload pages
 }
 
-func (msg *Message) setPayload(payload string) error {
-	encPayload, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-	msg.payload = string(encPayload)
-	msg.length = uint32(len(encPayload))
-	msg.pages = uint32(math.Ceil(float64(msg.length) / payloadMaxLen))
+func (msg *Message) setPayload(plaintext string) error {
+	msg.pages = uint32(math.Ceil(float64(len(plaintext)) / textMaxLen))
 
-	dbg(fmt.Sprintf("msg length: %d", msg.length))
+	if msg.pages == 0 {
+		return fmt.Errorf("payload with 0 pages")
+	}
+
+	if msg.pages == 1 {
+		encoded, err := json.Marshal(plaintext)
+		if err != nil {
+			return err
+		}
+		msg.payload = append(msg.payload, string(encoded))
+	} else {
+		var (
+			page   uint32
+			offset uint32
+		)
+
+		// Adds the message containing the custom Pages header as the first
+		// message payload to be sent.
+		payload := fmt.Sprintf("%s\nPages: %d", tbedHeader, msg.pages)
+		encoded, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+		msg.payload = append(msg.payload, string(encoded))
+
+		for page = 1; page <= msg.pages; page++ {
+			payload = plaintext[offset:]
+			length := uint32(len(payload))
+
+			if length > textMaxLen {
+				payload = payload[:page*textMaxLen]
+				offset = page * textMaxLen
+			}
+
+			encoded, err = json.Marshal(payload)
+			if err != nil {
+				return err
+			}
+			msg.payload = append(msg.payload, string(encoded))
+		}
+	}
+
 	dbg(fmt.Sprintf("msg pages: %d", msg.pages))
 	dbg(fmt.Sprintf("msg payload: %s", msg.payload))
 
@@ -89,46 +126,39 @@ func (c Connection) readMessage() (*Message, error) {
 	}
 	dbg(fmt.Sprintf("read: message len raw: %x", header))
 
-	msg.length = nativeEndian.Uint32(header)
-	dbg(fmt.Sprintf("read: message len decoded: %d", msg.length))
+	length := nativeEndian.Uint32(header)
+	dbg(fmt.Sprintf("read: message len decoded: %d", length))
 
 	// Read encoded message from stdin based on the length header.
-	encPayload := make([]byte, msg.length)
+	encPayload := make([]byte, length)
 	if _, err := io.ReadFull(c.in, encPayload); err != nil {
 		return nil, err
 	}
-	if uint32(len(encPayload)) != msg.length {
+	if uint32(len(encPayload)) != length {
 		return nil, fmt.Errorf(
 			"received message length different from reported")
 	}
 	dbg(fmt.Sprintf("read: json message: %s", string(encPayload)))
 
 	// Decode from JSON formatted stream
-	if err := json.Unmarshal(encPayload, &msg.payload); err != nil {
+	var payload string
+	if err := json.Unmarshal(encPayload, &payload); err != nil {
 		return nil, err
 	}
+	msg.payload = append(msg.payload, payload)
 	log.Printf("received message: %s", msg.payload)
 
 	return msg, nil
 }
 
-// send sends messages to the other end of the connection considering
-// paged messages.
-func (c Connection) send(msg Message) error {
-	var (
-		page   uint32
-		offset uint32
-	)
+// sendMessage send all the pages of a certain message to the extension.
+func (c Connection) sendMessage(msg Message) error {
+	var page uint32
 
-	for page = 1; page <= msg.pages; page++ {
-		payload := msg.payload[offset:msg.length]
-		if msg.pages > 1 {
-			payload = msg.payload[offset : page*payloadMaxLen]
-			offset = page * payloadMaxLen
-			dbg(fmt.Sprintf("send: page %d", page))
-		}
-
+	for page = 0; page < msg.pages; page++ {
+		payload := msg.payload[page]
 		length := uint32(len(payload))
+
 		header := make([]byte, 4)
 		nativeEndian.PutUint32(header, length)
 
@@ -146,38 +176,5 @@ func (c Connection) send(msg Message) error {
 		}
 		log.Printf("message sent: %s", payload)
 	}
-	return nil
-}
-
-// sendMessage wraps the generic send() call to first handle any custom header
-// the message requires. Today, only the header related to paged message is
-// supported and, for that, we send a message to the extension having this
-// "custom header" as payload before sending the actual message with the
-// actual payload.
-func (c Connection) sendMessage(msg Message) error {
-	if msg.length > payloadMaxLen {
-		// Create new message to indicate the number of pages:
-		// """"
-		// --tbed-hdr
-		// Pages: %d
-		// """"
-		// we might make more use of that in the future.
-		hdrPages := fmt.Sprintf("%sPages: %d", tbedHeader, msg.pages)
-		encPages, err := json.Marshal(hdrPages)
-		if err != nil {
-			return err
-		}
-
-		pagesMsg := Message{}
-		pagesMsg.payload = string(encPages)
-		if err := c.send(pagesMsg); err != nil {
-			return err
-		}
-	}
-
-	if err := c.send(msg); err != nil {
-		return err
-	}
-
 	return nil
 }

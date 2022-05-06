@@ -94,18 +94,18 @@ func initEditor(msg Message) (Editor, error) {
 	dbg(fmt.Sprintf("editor message payload:\n%s", msg.payload))
 
 	hdrLine := make([]byte, len(tbedHeader))
-	reader := strings.NewReader(msg.payload)
+	reader := strings.NewReader(msg.payload[0])
 	if _, err := io.ReadFull(reader, hdrLine); err != nil {
 		return editor, err
 	}
 
-	if strings.HasPrefix(string(hdrLine), tbedHeader) {
+	if string(hdrLine) == tbedHeader {
 		hdrLine = make([]byte, reader.Len())
 		if _, err := io.ReadFull(reader, hdrLine); err != nil {
 			return editor, err
 		}
 
-		if strings.HasPrefix(string(hdrLine), "Command") {
+		if strings.Contains(string(hdrLine), "Command") {
 			editor.cmd = strings.SplitN(string(hdrLine), " ", 2)[1]
 		}
 	}

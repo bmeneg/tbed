@@ -42,7 +42,7 @@ const EXT_MAX_MSGLEN = 4294967296;
 const APP_MAX_MSGLEN = 1048576;
 
 // Custom header delimiter.
-const TBED_HEADER = "--tbed-hdr\n";
+const TBED_HEADER = "--tbed-hdr";
 
 // Tab ID from where the message was first picked up.
 var g_tabID = 0;
@@ -77,10 +77,10 @@ function hndlResponse(resp)
 	dbg(`resp: message: ${resp}`);
 	
 	// Handle possible paged/continued responses.
-	if (resp.startsWith(TBED_HEADER)) {
-		if (resp.substring(TBED_HEADER.length).startsWith("Pages:")) {
-			g_pages = resp.substring(4 + "Pages: ".length);
-			dbg(`resp: message with ${pages} pages`);
+	if (resp.match(TBED_HEADER)) {
+		if (resp.match("Pages: ")) {
+			g_pages = resp.replace(/.*Pages: (\d+).*/g, "$1");
+			dbg(`resp: message with ${g_pages} pages`);
 			return;
 		}
 	}
@@ -117,7 +117,7 @@ async function sendMessage(appPort, msg)
 
 	// First send the editor command to be ran by the native app.
 	const cmd = await editor();
-	cmdMsg = `${TBED_HEADER}Command: ${cmd}`;
+	cmdMsg = `${TBED_HEADER}\nCommand: ${cmd}`;
 	dbg(`send: message len: ${cmdMsg.length}`);
 	dbg(`send: command message: ${cmdMsg}`);
 	appPort.postMessage(cmdMsg);

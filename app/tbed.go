@@ -78,16 +78,18 @@ func main() {
 	}
 
 	// Third, update message payload with the edited version.
-	text, err := editor.edit(textMsg.payload)
+	text, err := editor.edit(textMsg.payload[0])
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err = textMsg.setPayload(text); err != nil {
+
+	retMsg := &Message{}
+	if err = retMsg.setPayload(text); err != nil {
 		log.Fatal(err)
 	}
 
 	// Finally, send the updated message back to the extension.
-	if err = extConn.sendMessage(*textMsg); err != nil {
+	if err = extConn.sendMessage(*retMsg); err != nil {
 		log.Fatal(err)
 	}
 }
