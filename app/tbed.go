@@ -21,7 +21,11 @@ package main
 import (
 	"log"
 	"os"
+	"strconv"
 )
+
+var externDebug string = "true"
+var externLogFilename string = "tbed.log"
 
 // LogOptions is just a helper to store logging specificities.
 type LogOptions struct {
@@ -29,12 +33,21 @@ type LogOptions struct {
 	debug bool
 }
 
-var logOpts = LogOptions{fn: "tbed.log", debug: true}
+var logOpts LogOptions
 
 // initLogger set some settings for logging data into a file instead of the
 // default stdout/stderr, which are already being used for in/out of the
 // MailExtension protocol.
 func initLogger() error {
+	debug, err := strconv.ParseBool(externDebug)
+	if err != nil {
+		return err
+	}
+	logOpts = LogOptions{
+		fn:    externLogFilename,
+		debug: debug,
+	}
+
 	fd, err := os.Create(logOpts.fn)
 	if err != nil {
 		return err
