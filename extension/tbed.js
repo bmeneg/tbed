@@ -51,6 +51,10 @@ var g_tabID = 0;
 var g_pagedResponses = [];
 var g_pages = 0;
 
+// Port error status: it's set from an asynchronous call, so be careful on
+// relying on this value.
+var g_portError = false;
+
 /* Logging helper. */
 function dbg(text)
 {
@@ -109,6 +113,8 @@ function hndlResponse(resp)
  * is an async operation and we can't move forward without the result. */
 async function sendMessage(appPort, msg)
 {
+	if (g_portError) return;
+
 	// It should _never_ happen. 4GB _should_ not be a real message
 	if (msg.length > EXT_MAX_MSGLEN) {
 		console.error("no, you won't send a freaking 4G+ payload");
@@ -132,13 +138,16 @@ async function sendMessage(appPort, msg)
 function initNativeConnection()
 {
 	appPort = browser.runtime.connectNative("tbed");
-	if (appPort.error) {
-		console.error(`connection failed: ${appPort.error.message}`);
-		return;
-	}
-	dbg("connected with success");
-
+	appPort.onDisconnect.addListener((port) => {
+		let err = browser.runtime.lastError || port.error;
+		if (err) {
+			g_portError = true;
+			console.error(`connection failed: ${err.message}`);
+			return;
+		}
+	});
 	appPort.onMessage.addListener(hndlResponse);
+
 	return appPort;
 }
 
