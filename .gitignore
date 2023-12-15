@@ -1,4 +1,7 @@
-*.exe
+.vscode/
+.nvim/
+
+*.exe*
 *.log
 *.xpi
 *.nvim
