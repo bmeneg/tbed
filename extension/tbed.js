@@ -61,9 +61,22 @@ function dbg(text)
 	if (DEBUG) console.log(`tbed: dbg: ${text}`);
 }
 
+/* Convert plainText to HTML text. */
+function plainToHTMLText(text)
+{
+	// Replace newline chars by <br> HTML tags, since newlines are not
+	// converted in the following conversion method.
+	text = text.replace(/\n/g,"<br>");
+	// Set element's innerHTML to gain "automatic" string->HTML conversion
+	let el = document.createElement("div");
+	el.innerHTML = text;
+	return el.outerHTML;
+}
+
 /* editor gets the external editor command set by the user in the options
  * page. */
-async function editor() {
+async function editor()
+{
 	let storage;
 	try {
 		storage = await browser.storage.local.get();
@@ -88,7 +101,6 @@ function hndlResponse(resp)
 			return;
 		}
 	}
-
 	if (g_pages > 0) {
 		dbg(`resp: continued response: ${resp}`);
 		g_pagedResponses.push(resp);
@@ -104,7 +116,16 @@ function hndlResponse(resp)
 		return resp;
 	}
 
-	browser.compose.setComposeDetails(g_tabID, {plainTextBody: finalResp});
+	let cDetails = browser.compose.getComposeDetails(g_tabID);
+	if (cDetails.isPlainText) {
+		// If the composer is already set to use only plaintext, paste the
+		// response as-is.
+		browser.compose.setComposeDetails(g_tabID, {plainTextBody: finalResp});
+	} else {
+		// Otherwise, set the composer body with the new HTML styled response.
+		finalResp = plainToHTMLText(finalResp);
+		browser.compose.setComposeDetails(g_tabID, {body: finalResp});
+	}
 }
 
 /* sendMessage is a simple wrapper around WebExtension's API postMessage()
@@ -147,25 +168,17 @@ function initNativeConnection()
 		}
 	});
 	appPort.onMessage.addListener(hndlResponse);
-
 	return appPort;
 }
 
 /* hndlEvent is the common code for extracting the compose text to be sent
  * to the native application. */
-async function hndlUIEvent(tabObj) {
-	dbg(`tab id: ${tabObj.id} tab title: ${tabObj.title}`);
-	g_tabID = tabObj.id
-	let appPort = initNativeConnection();
-	
+async function hndlUIEvent()
+{
 	let cDetails = await browser.compose.getComposeDetails(g_tabID);
-	if (cDetails.isPlainText == false) {
-		console.error("non-plaintext isn't supported yet");
-		return;
-	}
-
-	let body = cDetails.plainTextBody;
-	await sendMessage(appPort, body);
+	// TODO: support HTML body editing by letting the user decide if he wants
+	// edit it as HTML or plaintext, or something like that (cDetails.body).
+	await sendMessage(initNativeConnection(), cDetails.plainTextBody);
 	return;
 }
 
@@ -174,7 +187,9 @@ async function hndlUIEvent(tabObj) {
 function btnClicked(tabObj)
 {
 	dbg("event: button clicked");
-	hndlUIEvent(tabObj);
+	dbg(`tab id: ${tabObj.id} tab title: ${tabObj.title}`);
+	g_tabID = tabObj.id;
+	hndlUIEvent();
 }
 
 /* cmdCalled handle hotkey command events. */
@@ -210,7 +225,8 @@ async function cmdCalled(event)
 }
 
 /* setupListeners set the event handlers for the extension. */
-function setupListeners() {
+function setupListeners()
+{
 	browser.composeAction.onClicked.addListener(btnClicked);
 	browser.commands.onCommand.addListener(cmdCalled);
 }
