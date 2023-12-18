@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -52,7 +51,7 @@ func (ed Editor) run(path string) error {
 // it with the editor and, once the editor is closed, the file is read and
 // deleted. The content is then returned for further processing.
 func (ed Editor) edit(text string) (string, error) {
-	file, err := ioutil.TempFile(os.TempDir(), "tbed-")
+	file, err := os.CreateTemp(os.TempDir(), "tbed-")
 	if err != nil {
 		return "", err
 	}
@@ -73,7 +72,7 @@ func (ed Editor) edit(text string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	content, err = ioutil.ReadAll(file)
+	content, err = io.ReadAll(file)
 	if err != nil {
 		return "", err
 	}
