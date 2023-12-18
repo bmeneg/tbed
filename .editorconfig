@@ -1,0 +1,20 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespaces = true
+max_line_length = 80
+indent_style = tab
+indent_size = tab
+tab_width = 4
+
+[*.md]
+indent_style = space
+trim_trailing_whitespaces = false
+max_line_length = 120
+
+[*.{json,html,css}]
+indent_style = space
+max_line_length = 120
+tab_width = 2
